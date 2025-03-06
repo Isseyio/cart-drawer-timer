@@ -1,0 +1,91 @@
+   <div class="containercart">
+              <div id="timer-cart" class="timer-cart">
+                <span id="timer"></span>
+              </div>
+            </div>
+            <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.1/dist/js.cookie.min.js"></script>
+            <script type="text/javascript" src="https://cdn.shopify.com/extensions/da3832c4-e6fd-4729-be88-5f2d89f6c943/consentik-ex-240719.0/assets/cst.js" defer></script>
+            <link type="text/css" href="https://cdn.shopify.com/extensions/da3832c4-e6fd-4729-be88-5f2d89f6c943/consentik-ex-240719.0/assets/main.css" rel="stylesheet">
+            <script>
+              const countdownDuration = 10 * 60 * 1000; // 10 minutes in milliseconds
+              const cookieName = 'timerCart';
+              const messages = {
+                en: {
+                  timerText: "Cart reserved for the next:",
+                  errorText: "Timer element not found"
+                },
+                nl: {
+                  timerText: "Vanwege beperkte voorraad is je winkelwagen gereserveerd voor:",
+                  errorText: "Timer-element niet gevonden"
+                },
+                de: {
+                  timerText: "Aufgrund des geringen Lagerbestands ist Ihr Warenkorb reserviert für:",
+                  errorText: "Timer-Element wurde nicht gefunden"
+                }
+              };
+              function getCurrentLocale() {
+                const locale = Shopify.locale || 'en';
+                if (locale !== 'nl' && locale !== 'de') {
+                  return 'en';
+                }
+                return locale;
+              }
+              function updateTimerDisplay(timeLeft) {
+                const locale = getCurrentLocale();
+                const minutes = Math.floor(timeLeft / 60000);
+                const seconds = Math.floor((timeLeft % 60000) / 1000);
+                const timerElement = document.getElementById('timer');
+                if (timerElement) {
+                  timerElement.innerHTML = `
+                    ${messages[locale].timerText} 
+                    <span>
+                      ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}
+                    </span>
+                  `;
+                } else {
+                  console.error(messages[locale].errorText);
+                }
+              }
+              function startTimer() {
+                let endTime = Date.now() + countdownDuration;
+                Cookies.set(cookieName, endTime.toString(), { expires: 1 });
+                const timerInterval = setInterval(() => {
+                  const currentTime = Date.now();
+                  let timeLeft = parseInt(Cookies.get(cookieName)) - currentTime;
+                  if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    startTimer();
+                  } else {
+                    updateTimerDisplay(timeLeft);
+                  }
+                }, 1000);
+              }
+              function resumeTimer() {
+                const savedEndTime = Cookies.get(cookieName);
+                if (savedEndTime && !isNaN(savedEndTime)) {
+                  const timeLeft = parseInt(savedEndTime) - Date.now();
+                  if (timeLeft > 0) {
+                    startInterval(parseInt(savedEndTime));
+                  } else {
+                    startTimer();
+                  }
+                } else {
+                  startTimer();
+                }
+              }
+              function startInterval(endTime) {
+                const timerInterval = setInterval(() => {
+                  const currentTime = Date.now();
+                  let timeLeft = endTime - currentTime;
+                  if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    startTimer();
+                  } else {
+                    updateTimerDisplay(timeLeft);
+                  }
+                }, 1000);
+              }
+              document.addEventListener('DOMContentLoaded', () => {
+                resumeTimer();
+              });
+            </script>
